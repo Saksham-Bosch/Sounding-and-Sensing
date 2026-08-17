@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://event-information-platform/contracts/interview.schema.json",
+  "title": "Interview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "eventId",
+    "questionnaireId",
+    "organizationId",
+    "status",
+    "currentQuestionPosition"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "questionnaireId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "organizationId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "currentQuestionPosition": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

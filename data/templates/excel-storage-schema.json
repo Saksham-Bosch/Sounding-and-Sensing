@@ -1,0 +1,209 @@
+{
+  "schemaVersion": "0.1.0",
+  "title": "TemporaryExcelWorkbookLayout",
+  "notes": "POC-only local workbook structure. No binary content, credentials, or production data.",
+  "sheets": [
+    {
+      "name": "Events",
+      "columns": [
+        "id",
+        "organizationId",
+        "name",
+        "type",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "StandardQuestions",
+      "columns": [
+        "id",
+        "organizationId",
+        "questionText",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "StandardAnswers",
+      "columns": [
+        "id",
+        "eventId",
+        "standardQuestionId",
+        "answerText",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "QuestionnaireGenerations",
+      "columns": [
+        "id",
+        "eventId",
+        "status",
+        "requestedAt",
+        "completedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "Questionnaires",
+      "columns": [
+        "id",
+        "eventId",
+        "generationId",
+        "schemaVersion",
+        "title",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "GeneratedQuestions",
+      "columns": [
+        "id",
+        "questionnaireId",
+        "position",
+        "prompt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "InterviewSessions",
+      "columns": [
+        "id",
+        "eventId",
+        "questionnaireId",
+        "organizationId",
+        "status",
+        "currentQuestionPosition",
+        "startedAt",
+        "completedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "InterviewAnswers",
+      "columns": [
+        "id",
+        "interviewId",
+        "generatedQuestionId",
+        "answerText",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "Assets",
+      "columns": [
+        "id",
+        "eventId",
+        "interviewId",
+        "organizationId",
+        "assetType",
+        "storagePath",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    {
+      "name": "ProcessingJobs",
+      "columns": [
+        "id",
+        "assetId",
+        "processorType",
+        "state",
+        "simulated",
+        "message",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "fromSheet": "StandardAnswers",
+      "fromColumn": "eventId",
+      "toSheet": "Events",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "StandardAnswers",
+      "fromColumn": "standardQuestionId",
+      "toSheet": "StandardQuestions",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "QuestionnaireGenerations",
+      "fromColumn": "eventId",
+      "toSheet": "Events",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "Questionnaires",
+      "fromColumn": "eventId",
+      "toSheet": "Events",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "Questionnaires",
+      "fromColumn": "generationId",
+      "toSheet": "QuestionnaireGenerations",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "GeneratedQuestions",
+      "fromColumn": "questionnaireId",
+      "toSheet": "Questionnaires",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "InterviewSessions",
+      "fromColumn": "eventId",
+      "toSheet": "Events",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "InterviewSessions",
+      "fromColumn": "questionnaireId",
+      "toSheet": "Questionnaires",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "InterviewAnswers",
+      "fromColumn": "interviewId",
+      "toSheet": "InterviewSessions",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "InterviewAnswers",
+      "fromColumn": "generatedQuestionId",
+      "toSheet": "GeneratedQuestions",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "Assets",
+      "fromColumn": "eventId",
+      "toSheet": "Events",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "Assets",
+      "fromColumn": "interviewId",
+      "toSheet": "InterviewSessions",
+      "toColumn": "id"
+    },
+    {
+      "fromSheet": "ProcessingJobs",
+      "fromColumn": "assetId",
+      "toSheet": "Assets",
+      "toColumn": "id"
+    }
+  ]
+}

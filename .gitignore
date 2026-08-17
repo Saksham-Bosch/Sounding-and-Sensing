@@ -1,6 +1,5 @@
 # Reference material
 architecture-analysis-workspace/
-architecture-information-workspace/
 
 # Secrets and environment files
 .env
@@ -12,8 +11,7 @@ architecture-information-workspace/
 *.pfx
 secrets/
 credentials/
-AGENTS.local.md
-AGENTS.md
+
 
 # Local configuration containing real values
 config/local.yaml
