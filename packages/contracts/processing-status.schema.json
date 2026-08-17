@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://event-information-platform/contracts/processing-status.schema.json",
+  "title": "ProcessingStatus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assetId",
+    "state",
+    "processorType",
+    "simulated",
+    "message"
+  ],
+  "properties": {
+    "assetId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "state": {
+      "type": "string"
+    },
+    "processorType": {
+      "type": "string"
+    },
+    "simulated": {
+      "type": "boolean"
+    },
+    "message": {
+      "type": "string"
+    }
+  }
+}

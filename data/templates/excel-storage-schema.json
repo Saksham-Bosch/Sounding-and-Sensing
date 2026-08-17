@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TemporaryExcelStorageSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sheets",
+    "relationships"
+  ],
+  "properties": {
+    "sheets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sheet"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    }
+  },
+  "$defs": {
+    "sheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "columns"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/column"
+          }
+        }
+      }
+    },
+    "column": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fromSheet",
+        "fromColumn",
+        "toSheet",
+        "toColumn"
+      ],
+      "properties": {
+        "fromSheet": {
+          "type": "string"
+        },
+        "fromColumn": {
+          "type": "string"
+        },
+        "toSheet": {
+          "type": "string"
+        },
+        "toColumn": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
