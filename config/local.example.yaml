@@ -1,0 +1,5 @@
+environment: local
+storage_provider: excel
+speech_to_text_provider: simulated
+ocr_provider: simulated
+database_provider: excel

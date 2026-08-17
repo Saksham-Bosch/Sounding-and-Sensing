@@ -1,0 +1,5 @@
+# Phase 0 placeholder only.
+# Local containers will be defined later after architecture and contract decisions are finalized.
+# Do not start PostgreSQL or other services in this stage.
+
+services: {}
