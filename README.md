@@ -1,6 +1,6 @@
-# Event Information Platform
+# Sounding and Sensing
 
-Event Information Platform is the permanent repository for the Event Information Gathering and Dissemination platform.
+Sounding and Sensing is the permanent repository for the Event Information Gathering and Dissemination platform.
 
 Current status: architecture and proof-of-concept planning stage. The repository currently contains scaffold, policy, and contract-oriented placeholders only. It does not claim to implement the full application.
 
