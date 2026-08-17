@@ -1,29 +1,58 @@
-# ADR-002 Temporary Excel Adapter
+# Title
 
-Status: Proposed
+ADR-002 Local Secret Management
 
-## Confirmed requirement
+# Status
 
-- Local development may require temporary non-database storage before GCP and PostgreSQL are available.
+Proposed
 
-## Proposed decision
+# Context
 
-- Excel may temporarily support local development.
-- Excel access must occur through repository interfaces.
-- UI and business services must not directly access workbook sheets.
-- Files are not stored inside the workbook.
+Phase 0 introduces test and contract scaffolding that depends on local configuration for URLs, IDs, keys, and tokens. Confidential values must remain outside version control while still supporting local diagnostics.
 
-## Temporary POC choice
+# Decision
 
-- Use a replaceable Excel-backed adapter for local-only development behavior.
+- `.env.local` is the approved local-development filename for this repository.
+- `.env.example` contains only empty placeholders and safe descriptions.
+- Deployed secrets will later use the approved secret-management mechanism.
+- Frontend variables must never contain MRA keys.
+- Real confidential API URLs must not enter Git history.
+- Ignored files are not considered a secure secret store by themselves, so values must not be copied into agent prompts, logs, or screenshots.
 
-## Unresolved question
+# Alternatives considered
 
-- Exact export and import control points for later migration verification.
+- Store local secrets in committed development config files.
+- Use ad hoc per-script environment-variable conventions without a documented file contract.
 
-## Future implementation
+# Consequences
 
-- Replace Excel with PostgreSQL.
-- Keep workbooks free of production or sensitive data.
-- Keep actual workbook files Git-ignored.
-- Treat Excel as unsuitable for authorization, concurrency, and production use.
+- Local configuration is standardized for test and tooling behavior.
+- Secret leakage risk is reduced through explicit storage and logging boundaries.
+
+# Security considerations
+
+- Secrets remain excluded from repository history and review surfaces.
+- Configuration errors must report missing-variable names only, never values.
+
+# Validation requirements
+
+- Confirm `.env.local` is ignored.
+- Confirm `.env.example` contains no real secret values.
+- Confirm tests and helpers do not log key, token, or URL values.
+
+# Unresolved questions
+
+- Final approved runtime secret-store mechanism and operational access workflow.
+
+# Evidence classification
+
+- Confirmed from repository policy: `.env.example` placeholder-only rule and secret non-commit requirement.
+- Proposed: `.env.local` as the local-development contract file.
+
+# Date
+
+2026-08-17
+
+# Owner
+
+UNRESOLVED

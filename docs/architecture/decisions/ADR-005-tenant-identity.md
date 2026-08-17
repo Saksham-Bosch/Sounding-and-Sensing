@@ -1,28 +1,56 @@
-# ADR-005 Tenant Identity
+# Title
 
-Status: Proposed
+ADR-005 GCP Dependency Boundary
 
-## Confirmed requirement
+# Status
 
-- Multi-organization isolation is required for future production architecture.
+Proposed
 
-## Proposed decision
+# Context
 
-- Tenant-aware fields are preserved in contracts and storage designs from Phase 0 onward.
+Phase 0 development occurs before GCP access and managed service provisioning are available. Local test foundations are needed without claiming cloud integration readiness.
 
-## Temporary POC choice
+# Decision
 
-- Use placeholders for organization identifiers in contracts and schemas.
+- Phase 0 test scripts can be developed locally.
+- Native processors may be evaluated locally.
+- Cloud SQL, Cloud Storage, Pub/Sub, Cloud Run, Speech-to-Text, and Document AI integration require later GCP access.
+- Local tests must not pretend to prove GCP integration.
+- GCP-specific functionality remains mocked or contract-only until access is available.
 
-## Unresolved question
+# Alternatives considered
 
-- User identity model.
-- Organization identifier authority.
-- JWT claims mapping.
-- Event ownership model.
-- Cross-organization isolation mechanics.
-- Portal identity mapping approach.
+- Block all test and contract work until cloud access is available.
+- Implement provisional cloud integrations using guessed or placeholder service behavior.
 
-## Future implementation
+# Consequences
 
-- Final tenant and identity model will be defined after organizational identity constraints are confirmed.
+- Phase 0 can progress on interfaces and test discipline without cloud coupling.
+- Cloud-specific confidence remains deferred until authorized environments exist.
+
+# Security considerations
+
+- No unmanaged cloud credentials are introduced during local scaffolding.
+- Live cloud service calls remain prohibited without explicit authorization.
+
+# Validation requirements
+
+- Confirm no cloud resources are provisioned during this phase.
+- Confirm GCP-dependent behaviors are represented as mocks or contracts only.
+
+# Unresolved questions
+
+- Final cloud project layout, IAM boundaries, and deployment topology.
+
+# Evidence classification
+
+- Confirmed from repository policy: no cloud provisioning or production-service calls in Phase 0.
+- Proposed: strict local-versus-cloud boundary for testing and contract validation.
+
+# Date
+
+2026-08-17
+
+# Owner
+
+UNRESOLVED
