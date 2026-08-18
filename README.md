@@ -4,6 +4,11 @@ Sounding and Sensing is the permanent repository for the Event Information Gathe
 
 Current status: architecture and proof-of-concept planning stage. The repository currently contains scaffold, policy, and contract-oriented placeholders only. It does not claim to implement the full application.
 
+Progress status:
+
+- Phase 0: Foundation and architecture baseline - In progress
+- Phase 0.5: Azure API Verification Spike - Completed
+
 Planned major components:
 
 - Lovable-generated React frontend for an initial frontend-only proof of concept
@@ -31,6 +36,12 @@ Temporary development constraints:
 Excel is a temporary storage adapter, not the production persistence layer.
 PostgreSQL on GCP is the target database.
 Speech-to-Text and OCR integrations require approved organizational services.
+
+API integration verification notes:
+
+- OCR: Verified with multi-page PDF support (PyMuPDF) and strict prompt extraction.
+- Market Research Agent: Verified with strict JSON schema enforcement.
+- STT (Whisper): Entra ID authentication and MP3 video-to-audio extraction are confirmed; live transcription remains pending Azure network IP whitelist.
 
 Repository layout summary:
 
