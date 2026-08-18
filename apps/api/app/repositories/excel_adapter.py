@@ -1,3 +1,4 @@
+import ast
 import os
 import pandas as pd
 from pathlib import Path
@@ -46,4 +47,17 @@ class ExcelDatabase:
         df = pd.read_excel(DB_FILE, sheet_name=sheet_name)
         # Replace NaN/NaT with None
         df = df.where(pd.notnull(df), None)
-        return df.to_dict(orient='records')
+        records = df.to_dict(orient='records')
+        return [self._restore_excel_record(record) for record in records]
+
+    def _restore_excel_record(self, record: dict) -> dict:
+        restored_record = {}
+        for key, value in record.items():
+            if isinstance(value, str):
+                try:
+                    restored_record[key] = ast.literal_eval(value)
+                    continue
+                except (ValueError, SyntaxError):
+                    pass
+            restored_record[key] = value
+        return restored_record
