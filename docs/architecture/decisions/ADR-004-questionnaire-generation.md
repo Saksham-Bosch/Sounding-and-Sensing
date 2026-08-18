@@ -1,26 +1,58 @@
-# ADR-004 Questionnaire Generation
+# Title
 
-Status: Proposed
+ADR-004 Test Asset Governance
 
-## Confirmed requirement
+# Status
 
-- Questionnaire generation is driven by event details and standardized question-answer context.
+Proposed
 
-## Proposed decision
+# Context
 
-- Event details and standard answers are sent in one request.
-- MRA integration returns the complete questionnaire.
-- Questionnaire output is validated against a strict JSON schema.
-- Generated questions are stored in deterministic order.
+Phase 0 introduces local file-processing and contract-testing scaffolding. Test inputs and outputs must be governed so private or sensitive material is never committed or exposed.
 
-## Temporary POC choice
+# Decision
 
-- Frontend displays one current question at a time while server-side ordering remains authoritative.
+- User-provided audio, video, and documents are local test inputs.
+- Uploaded test assets are ignored by default.
+- Test inputs must not contain confidential, personal, or production data.
+- Original files, extracted content, and generated output remain local.
+- Small synthetic fixtures may be committed only after explicit review.
+- File size, MIME type, and checksum may be recorded without committing content when sensitive naming context is not exposed.
 
-## Unresolved question
+# Alternatives considered
 
-- Final policy for regenerating or partially updating questionnaires after an interview starts.
+- Commit all diagnostic test assets for reproducibility.
+- Disable file-based testing in Phase 0 entirely.
 
-## Future implementation
+# Consequences
 
-- Agent must not be called separately for each displayed question.
+- Test reproducibility relies on controlled synthetic fixtures and local manifests.
+- Sensitive-content leakage risk is significantly reduced.
+
+# Security considerations
+
+- Private assets must never be committed.
+- Generated outputs from private inputs must remain ignored and local.
+
+# Validation requirements
+
+- Confirm private asset directories are ignored except required placeholders.
+- Confirm generated outputs are ignored.
+- Confirm no private assets are staged before commits.
+
+# Unresolved questions
+
+- Final fixture-approval process for synthetic assets shared across teams.
+
+# Evidence classification
+
+- Confirmed from repository policy: no sensitive or user content in Git.
+- Proposed: explicit asset-governance controls for Phase 0 testing.
+
+# Date
+
+2026-08-17
+
+# Owner
+
+UNRESOLVED

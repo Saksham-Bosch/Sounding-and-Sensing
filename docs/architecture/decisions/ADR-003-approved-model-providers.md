@@ -1,26 +1,60 @@
-# ADR-003 Approved Model Providers
+# Title
 
-Status: Proposed
+ADR-003 API Contract Testing Strategy
 
-## Confirmed requirement
+# Status
 
-- Speech-to-Text and OCR integrations must use approved organizational services.
+Proposed
 
-## Proposed decision
+# Context
 
-- Open-source STT and OCR models are not introduced.
-- STT and OCR remain provider interfaces in Phase 0.
-- Real implementation depends on approved organizational service details.
+Phase 0 requires a safe and repeatable way to validate external API contracts while preventing unapproved live calls and preventing disclosure of sensitive response content.
 
-## Temporary POC choice
+# Decision
 
-- Simulated providers may support frontend and workflow testing.
+- Phase 0.5 tests are opt-in live checks against three real dependencies: OCR
+	(Azure OpenAI chat/vision), STT (Azure OpenAI Whisper), and the External News
+	Agent (topic-to-questionnaire).
+- Live calls are disabled by default and require `API_TEST_ALLOW_LIVE_CALLS=true`.
+- Each live test skips cleanly (not fails) when required configuration or sample
+	assets are missing.
+- Raw API responses are not committed; generated output is written only to
+	ignored local paths (`.test-output/`).
 
-## Unresolved question
+# Alternatives considered
 
-- Final approved authentication mechanism (API key, gateway token, or workload identity) per service.
+- Treat all contract checks as live tests in default CI.
+- Rely only on documentation review without executable contract checks.
 
-## Future implementation
+# Consequences
 
-- Keep credentials outside frontend and Git.
-- Approve deterministic parsing libraries through a separate dependency review.
+- CI remains deterministic and safe by default.
+- Live behavior can still be validated when explicitly authorized and configured.
+
+# Security considerations
+
+- Authorization and signed URL details are redacted in diagnostic output.
+- Live tests must use synthetic, non-sensitive payloads.
+
+# Validation requirements
+
+- Live tests require explicit opt-in (`API_TEST_ALLOW_LIVE_CALLS=true`).
+- Each live test asserts a successful (200) response and non-empty extracted
+	content (transcription or questionnaire answer).
+
+# Unresolved questions
+
+- Exact endpoint contracts for external services pending authoritative API specifications.
+
+# Evidence classification
+
+- Confirmed from repository policy: no production-service calls by default and no secret leakage.
+- Proposed: three-flow opt-in live test structure (OCR, STT, News Agent).
+
+# Date
+
+2026-08-17
+
+# Owner
+
+UNRESOLVED

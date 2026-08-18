@@ -5,6 +5,7 @@ architecture-analysis-workspace/
 .env
 .env.*
 !.env.example
+*.local.env
 *.pem
 *.key
 *.p12
@@ -116,6 +117,14 @@ temp/
 coverage/
 test-results/
 playwright-report/
+.test-output/
+live-api-responses/
+generated-presentations/
+generated-transcripts/
+
+# Private test assets
+tests/assets/private/*
+!tests/assets/private/.gitkeep
 
 # Infrastructure state
 .terraform/

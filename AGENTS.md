@@ -271,6 +271,32 @@ Require appropriate:
 Do not claim tests passed unless they were actually executed.
 Record the exact commands executed and their results.
 
+# PHASE 0 LIVE API TESTING RULES
+
+- Live external API tests are opt-in and disabled by default.
+- Live tests require `API_TEST_ALLOW_LIVE_CALLS=true`.
+- Unit and normal CI tests must never call live services.
+- CI must use mocks or recorded sanitized contract shapes.
+- Real keys and URLs come only from ignored local configuration or an approved secret store.
+- Tests must never print authorization headers.
+- Tests must never print signed URLs or full confidential responses.
+- Request and response bodies must be redacted before diagnostic logging.
+- Live tests must use synthetic, non-sensitive input.
+- Test scripts must use explicit timeouts.
+- Retries must be bounded.
+- Tests must not create uncontrolled external resources.
+- Any created remote test artifact must be recorded and deleted where the API supports deletion.
+- Destructive API operations are prohibited unless explicitly approved.
+- Live API tests must be marked separately from unit and integration tests.
+- Commit staging must be reviewed for secrets before every commit.
+- Uploaded test assets and generated API outputs must remain ignored unless sanitized and explicitly approved as committed fixtures.
+
+README governance reminder:
+
+- Do not create another root README.
+- Update existing canonical README files.
+- Create a test README only because the test suite has distinct setup, commands, and safety requirements.
+
 # PROHIBITED ACTIONS
 
 Unless explicitly instructed, agents must not:
