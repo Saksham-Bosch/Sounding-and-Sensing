@@ -12,12 +12,14 @@ Phase 0 requires a safe and repeatable way to validate external API contracts wh
 
 # Decision
 
-- Tests are divided into unit, mocked contract, opt-in live contract, and file-processing tests.
-- Live calls are disabled by default.
-- API behavior must be discovered without guessing endpoints or schemas.
-- Questionnaire output must be validated against a local schema.
-- Raw API responses are not committed.
-- Sanitized response shapes may become fixtures only after review.
+- Phase 0.5 tests are opt-in live checks against three real dependencies: OCR
+	(Azure OpenAI chat/vision), STT (Azure OpenAI Whisper), and the External News
+	Agent (topic-to-questionnaire).
+- Live calls are disabled by default and require `API_TEST_ALLOW_LIVE_CALLS=true`.
+- Each live test skips cleanly (not fails) when required configuration or sample
+	assets are missing.
+- Raw API responses are not committed; generated output is written only to
+	ignored local paths (`.test-output/`).
 
 # Alternatives considered
 
@@ -37,8 +39,8 @@ Phase 0 requires a safe and repeatable way to validate external API contracts wh
 # Validation requirements
 
 - Live tests require explicit opt-in (`API_TEST_ALLOW_LIVE_CALLS=true`).
-- Unit and mocked contract tests must run without live network dependencies.
-- Contract validation must enforce questionnaire schema checks.
+- Each live test asserts a successful (200) response and non-empty extracted
+	content (transcription or questionnaire answer).
 
 # Unresolved questions
 
@@ -47,7 +49,7 @@ Phase 0 requires a safe and repeatable way to validate external API contracts wh
 # Evidence classification
 
 - Confirmed from repository policy: no production-service calls by default and no secret leakage.
-- Proposed: four-part test partition and opt-in live contract process.
+- Proposed: three-flow opt-in live test structure (OCR, STT, News Agent).
 
 # Date
 
