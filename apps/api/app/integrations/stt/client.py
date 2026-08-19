@@ -44,11 +44,25 @@ async def transcribe_audio_chunk(file_path: Path, token: str) -> str:
     """Sends a single audio chunk to Azure Whisper."""
     headers = {"Authorization": f"Bearer {token}"}
     async with httpx.AsyncClient(timeout=120.0, verify=False) as client:
+        # Read into memory to prevent chunked transfer encoding
         with open(file_path, "rb") as audio_file:
-            files = {"file": (file_path.name, audio_file, "audio/wav")}
-            response = await client.post(WHISPER_ENDPOINT, headers=headers, files=files)
-            response.raise_for_status()
-            return response.json().get("text", "")
+            audio_bytes = audio_file.read()
+
+        files = {"file": (file_path.name, audio_bytes, "audio/wav")}
+
+        response = await client.post(WHISPER_ENDPOINT, headers=headers, files=files)
+
+        print(f"--- AZURE WHISPER RAW RESPONSE ---")
+        print(f"Status: {response.status_code}")
+        print(f"Body: {response.text}")
+        print(f"----------------------------------")
+
+        response.raise_for_status()
+        try:
+            data = response.json()
+            return data.get("text", "")
+        except ValueError:
+            return response.text.strip()
 
 
 async def process_media_file(file_path: Path) -> str:
