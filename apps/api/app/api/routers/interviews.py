@@ -1,13 +1,17 @@
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
+import shutil
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
+from app.integrations.parsers.document_parser import parse_document, parse_url
 from app.repositories.excel_adapter import ExcelDatabase
 from app.schemas.interviews import AnswerCreate, AnswerResponse, InterviewSession
 
 router = APIRouter()
 db = ExcelDatabase()
+UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent / "data" / "local" / "uploads"
 
 
 @router.post("/start", response_model=InterviewSession, status_code=201)
@@ -66,29 +70,70 @@ async def get_next_question(session_id: str):
 
 @router.post("/{session_id}/answer", response_model=AnswerResponse, status_code=201)
 async def submit_answer(session_id: str, answer: AnswerCreate):
-    """Saves a text answer and advances the session position."""
     sessions = db.get_all_records("InterviewSessions")
     session = next((s for s in sessions if s.get("session_id") == session_id), None)
-
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Process the text answer
-    answer_id = f"ans-{uuid.uuid4().hex[:8]}"
-    processed_at = datetime.now(timezone.utc)
+    normalized_text = answer.content
+    if answer.input_type == "url":
+        normalized_text = await parse_url(answer.content)
+    elif answer.input_type not in ["text", "url"]:
+        normalized_text = f"[Pending processing for {answer.input_type}]"
 
-    answer_dict = answer.model_dump()
-    answer_dict["id"] = answer_id
-    answer_dict["session_id"] = session_id
-    answer_dict["normalized_text"] = answer.content if answer.input_type == "text" else f"[Pending processing for {answer.input_type}]"
-    answer_dict["processed_at"] = processed_at
+    answer_dict = {
+        "id": f"ans-{uuid.uuid4().hex[:8]}",
+        "session_id": session_id,
+        "question_id": answer.question_id,
+        "input_type": answer.input_type,
+        "content": answer.content,
+        "normalized_text": normalized_text,
+        "processed_at": datetime.now(timezone.utc).isoformat(),
+    }
 
-    # Save the answer
     db.save_record("InterviewAnswers", answer_dict)
-
-    # Advance the session position
     session["current_question_position"] = int(session.get("current_question_position", 1)) + 1
-    # Hack for the POC Excel mock: we append the updated session. In a real DB we would UPDATE.
     db.save_record("InterviewSessions", session)
+    return AnswerResponse(**answer_dict)
 
+
+@router.post("/{session_id}/answer/file", response_model=AnswerResponse, status_code=201)
+async def submit_file_answer(
+    session_id: str,
+    question_id: str = Form(...),
+    file: UploadFile = File(...),
+):
+    sessions = db.get_all_records("InterviewSessions")
+    session = next((s for s in sessions if s.get("session_id") == session_id), None)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    file_extension = Path(file.filename).suffix
+    local_file_path = UPLOAD_DIR / f"file-{uuid.uuid4().hex[:8]}{file_extension}"
+
+    with local_file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    mime_type = file.content_type or ""
+
+    # Route audio/video to be handled later, parse everything else now
+    if file_extension.lower() in [".mp3", ".wav", ".mp4", ".mov", ".avi", ".m4a"]:
+        normalized_text = "[Media file saved locally. Awaiting Whisper processing in Step 1.8]"
+    else:
+        normalized_text = await parse_document(local_file_path, mime_type)
+
+    answer_dict = {
+        "id": f"ans-{uuid.uuid4().hex[:8]}",
+        "session_id": session_id,
+        "question_id": question_id,
+        "input_type": "file",
+        "content": str(file.filename),
+        "normalized_text": normalized_text,
+        "processed_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    db.save_record("InterviewAnswers", answer_dict)
+    session["current_question_position"] = int(session.get("current_question_position", 1)) + 1
+    db.save_record("InterviewSessions", session)
     return AnswerResponse(**answer_dict)
