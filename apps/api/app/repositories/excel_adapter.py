@@ -45,10 +45,12 @@ class ExcelDatabase:
     def get_all_records(self, sheet_name: str) -> list[dict]:
         """Retrieves all records from a specific sheet as a list of dictionaries."""
         df = pd.read_excel(DB_FILE, sheet_name=sheet_name)
-        # Replace NaN/NaT with None
+
+        # Replace NaN/NaT with None so FastAPI can serialize it to JSON
+        df = df.replace({pd.NA: None, float("nan"): None})
         df = df.where(pd.notnull(df), None)
-        records = df.to_dict(orient='records')
-        return [self._restore_excel_record(record) for record in records]
+
+        return df.to_dict(orient='records')
 
     def _restore_excel_record(self, record: dict) -> dict:
         restored_record = {}
