@@ -10,3 +10,5 @@ python-multipart>=0.0.6
 PyMuPDF>=1.23.0
 python-docx>=1.0.0
 python-pptx>=0.6.21
+pydub>=0.25.1
+aiofiles>=23.2.1

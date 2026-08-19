@@ -6,6 +6,7 @@ import shutil
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.integrations.parsers.document_parser import parse_document, parse_url
+from app.integrations.stt.client import process_media_file
 from app.repositories.excel_adapter import ExcelDatabase
 from app.schemas.interviews import AnswerCreate, AnswerResponse, InterviewSession
 
@@ -117,9 +118,8 @@ async def submit_file_answer(
 
     mime_type = file.content_type or ""
 
-    # Route audio/video to be handled later, parse everything else now
     if file_extension.lower() in [".mp3", ".wav", ".mp4", ".mov", ".avi", ".m4a"]:
-        normalized_text = "[Media file saved locally. Awaiting Whisper processing in Step 1.8]"
+        normalized_text = await process_media_file(local_file_path)
     else:
         normalized_text = await parse_document(local_file_path, mime_type)
 
