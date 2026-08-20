@@ -131,3 +131,6 @@ tests/assets/private/*
 *.tfstate
 *.tfstate.*
 .terragrunt-cache/
+
+# Ignore empty folder placeholders
+**/.gitkeep
