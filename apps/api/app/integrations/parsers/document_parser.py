@@ -10,8 +10,12 @@ from bs4 import BeautifulSoup
 from app.integrations.ocr.client import extract_text_with_ocr
 
 
-async def parse_document(file_path: Path, mime_type: str) -> str:
+async def parse_document(file_path: Path | str, mime_type: str) -> str:
     """Extracts text deterministically, falling back to OCR for scanned PDFs."""
+    if mime_type == "url":
+        return await parse_url(str(file_path))
+
+    file_path = Path(file_path)
     extracted_text = ""
     suffix = file_path.suffix.lower()
 

@@ -23,7 +23,13 @@ async def generate_ai_summary(event_data: dict, answers_data: list, audience: st
         return "[Summary generation skipped: Azure credentials missing]"
 
     # Build the context from the event and all participant answers
-    context = f"Event: {event_data.get('title')}\nDescription: {event_data.get('description')}\n\nParticipant Responses:\n"
+    context = (
+        f"Event: {event_data.get('title')}\n"
+        f"Dates: {event_data.get('start_date')} to {event_data.get('end_date')}\n"
+        f"Speakers: {', '.join(event_data.get('speakers', []))}\n"
+        f"Description: {event_data.get('description')}\n\n"
+        f"Participant Responses:\n"
+    )
     for ans in answers_data:
         context += f"- [Role: {ans.get('participant_role', 'Unknown')}] Question: {ans.get('question_text')} | Answer: {ans.get('normalized_text')}\n"
 

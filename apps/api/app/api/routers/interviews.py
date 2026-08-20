@@ -5,7 +5,8 @@ import shutil
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from app.integrations.parsers.document_parser import parse_document, parse_url
+from app.integrations.moderation.client import check_content_safety, is_safe_url
+from app.integrations.parsers.document_parser import parse_document
 from app.integrations.stt.client import process_media_file
 from app.repositories.excel_adapter import ExcelDatabase
 from app.schemas.interviews import AnswerCreate, AnswerResponse, InterviewSession
@@ -77,10 +78,19 @@ async def submit_answer(session_id: str, answer: AnswerCreate):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    normalized_text = answer.content
-    if answer.input_type == "url":
-        normalized_text = await parse_url(answer.content)
-    elif answer.input_type not in ["text", "url"]:
+    normalized_text = ""
+    if answer.input_type == "text":
+        normalized_text = answer.content
+    elif answer.input_type == "url":
+        if not is_safe_url(answer.content):
+            raise HTTPException(status_code=400, detail="URL blocked due to SSRF/security policy.")
+
+        # Scrape the URL using existing document parser
+        normalized_text = await parse_document(answer.content, "url")
+
+        if not await check_content_safety(normalized_text):
+            raise HTTPException(status_code=400, detail="Submission rejected: Content violates safety policies.")
+    else:
         normalized_text = f"[Pending processing for {answer.input_type}]"
 
     answer_dict = {
@@ -119,10 +129,15 @@ async def submit_file_answer(
 
     mime_type = file.content_type or ""
 
-    if file_extension.lower() in [".mp3", ".wav", ".mp4", ".mov", ".avi", ".m4a"]:
-        normalized_text = await process_media_file(local_file_path)
-    else:
-        normalized_text = await parse_document(local_file_path, mime_type)
+    try:
+        if file_extension.lower() in [".mp3", ".wav", ".mp4", ".mov", ".avi", ".m4a"]:
+            normalized_text = await process_media_file(local_file_path)
+        else:
+            normalized_text = await parse_document(local_file_path, mime_type)
+    finally:
+        # Always delete the original uploaded file after processing is complete
+        if local_file_path.exists():
+            local_file_path.unlink()
 
     answer_dict = {
         "id": f"ans-{uuid.uuid4().hex[:8]}",
