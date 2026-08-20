@@ -13,6 +13,7 @@ class Question(BaseModel):
 
 class QuestionnaireBase(BaseModel):
     title: str = Field(default="Customized Event Interview")
+    metadata: Optional[dict] = None
     questions: List[Question]
 
 class QuestionnaireCreate(QuestionnaireBase):

@@ -1,15 +1,22 @@
 import uuid
 from typing import List
+
 from fastapi import APIRouter, HTTPException
-from app.schemas.questionnaires import QuestionnaireResponse, QuestionnaireCreate
+from pydantic import BaseModel
+
+from app.schemas.questionnaires import QuestionnaireResponse
 from app.repositories.excel_adapter import ExcelDatabase
-from app.integrations.mra.client import generate_questionnaire_from_mra
+from app.integrations.mra.client import generate_custom_questions
+
+
+class GenerateRequest(BaseModel):
+    event_id: str
 
 router = APIRouter()
 db = ExcelDatabase()
 
 @router.post("/generate", response_model=QuestionnaireResponse, status_code=201)
-async def generate_questionnaire(request: QuestionnaireCreate):
+async def generate_questionnaire(request: GenerateRequest):
     # 1. Fetch the event to get context (using the mock DB)
     events = db.get_all_records("Events")
     event = next((e for e in events if e.get("id") == request.event_id), None)
@@ -17,12 +24,9 @@ async def generate_questionnaire(request: QuestionnaireCreate):
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
         
-    # 2. Extract a research topic from the event title/description
-    topic = f"{event.get('title', '')} - {event.get('description', '')}"
-    
-    # 3. Call the external MRA Agent
+    # 2. Call the external MRA Agent with full event metadata context
     try:
-        generated_json = await generate_questionnaire_from_mra(topic)
+        generated_json = await generate_custom_questions(event)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"MRA Generation failed: {str(e)}")
         

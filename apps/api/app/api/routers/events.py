@@ -12,6 +12,11 @@ db = ExcelDatabase()
 async def create_event(event: EventCreate):
     # Convert request schema to dictionary
     event_dict = event.model_dump()
+
+    # Ensure rich metadata fields are always persisted for downstream RAG use.
+    event_dict["speakers"] = event.speakers
+    event_dict["start_date"] = event.start_date
+    event_dict["end_date"] = event.end_date
     
     # Generate system-controlled fields
     event_dict["id"] = f"evt-{uuid.uuid4().hex[:8]}"

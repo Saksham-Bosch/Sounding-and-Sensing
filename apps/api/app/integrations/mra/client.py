@@ -73,10 +73,90 @@ def _extract_questionnaire(data: Any) -> dict | None:
     return None
 
 
-def _fallback_questionnaire(topic: str) -> dict:
+def _event_fields(event_data: dict) -> tuple[str, str, str, str, str, str, str]:
+    title = str(event_data.get("title") or "")
+    description = str(event_data.get("description") or "")
+    speakers = ", ".join(event_data.get("speakers", [])) if event_data.get("speakers") else ""
+    start_date = str(event_data.get("start_date") or "")
+    end_date = str(event_data.get("end_date") or "")
+    dates = " - ".join(part for part in [start_date, end_date] if part).strip() or "Not specified"
+    search_query = f"{title} {speakers} {start_date} {description}"[:200].strip()
+    return title, description, speakers, start_date, end_date, dates, search_query
+
+
+def _baseline_questions() -> list[dict[str, Any]]:
+    base_texts = [
+        "Could you please state your primary role, department, and your main reason for attending this event?",
+        "What was the most valuable insight, concept, or connection you gained from this session?",
+        "How well did the event content and speakers meet your initial expectations?",
+    ]
+    return [
+        {
+            "id": f"q-{index:03d}",
+            "position": index,
+            "text": text,
+            "type": "OPEN_TEXT",
+            "required": True,
+            "allowed_input_types": ALLOWED_INPUT_TYPES,
+            "guidance": None,
+            "branch_rules": [],
+        }
+        for index, text in enumerate(base_texts, start=1)
+    ]
+
+
+def _context_only_questionnaire(event_data: dict) -> dict:
+    title, description, speakers, start_date, _, dates, _ = _event_fields(event_data)
+    topic = f"Event: {title}\nDates: {start_date}\nSpeakers: {speakers}\nDescription: {description}"
+    dynamic = [
+        f"Which strategic outcomes matter most for stakeholders attending {title or 'this event'}?",
+        f"What major risks, blockers, or execution challenges should be prioritized after {title or 'this event'}?",
+        f"Which decisions, partnerships, or follow-up actions should happen in the next 30 days based on {title or 'this event'}?",
+    ]
+
+    questions = _baseline_questions()
+    for idx, text in enumerate(dynamic, start=4):
+        questions.append(
+            {
+                "id": f"q-{idx:03d}",
+                "position": idx,
+                "text": text,
+                "type": "OPEN_TEXT",
+                "required": True,
+                "allowed_input_types": ALLOWED_INPUT_TYPES,
+                "guidance": "Use event-specific details where possible.",
+                "branch_rules": [],
+            }
+        )
+
     return {
         "schema_version": "1.0",
+        "questionnaire_id": "string",
+        "title": "Customized Event Interview",
+        "metadata": {
+            "event_title": title or "Not specified",
+            "event_description": description or "Not specified",
+            "event_dates": dates,
+            "event_speakers": [s.strip() for s in speakers.split(",") if s.strip()] or ["Not specified"],
+        },
+        "questions": questions,
+        "research_context": f"Generated from event metadata fallback context because structured retrieval was unavailable: {topic}",
+    }
+
+
+def _fallback_questionnaire(event_data: dict) -> dict:
+    title, description, speakers, start_date, _, dates, _ = _event_fields(event_data)
+    topic = f"Event: {title}\nDates: {start_date}\nSpeakers: {speakers}\nDescription: {description}"
+    return {
+        "schema_version": "1.0",
+        "questionnaire_id": "string",
         "title": "Standard Fallback Interview",
+        "metadata": {
+            "event_title": title or "Not specified",
+            "event_description": description or "Not specified",
+            "event_dates": dates,
+            "event_speakers": [s.strip() for s in speakers.split(",") if s.strip()] or ["Not specified"],
+        },
         "questions": [
             {
                 "id": "q-fallback-1",
@@ -89,34 +169,6 @@ def _fallback_questionnaire(topic: str) -> dict:
                 "branch_rules": [],
             }
         ],
-    }
-
-
-def _context_only_questionnaire(topic: str) -> dict:
-    prompts = [
-        f"What are the primary goals and strategic outcomes for {topic}?",
-        f"Which stakeholder groups are most affected by {topic}, and what are their main concerns?",
-        f"What implementation challenges and operational risks should be planned for in {topic}?",
-        f"What evidence or metrics should be tracked to evaluate success for {topic}?",
-        f"What near-term decisions need to be made to move {topic} from planning to execution?",
-    ]
-    return {
-        "schema_version": "1.0",
-        "title": "Customized Event Interview",
-        "questions": [
-            {
-                "id": f"q-{index:03d}",
-                "position": index,
-                "text": prompt,
-                "type": "OPEN_TEXT",
-                "required": True,
-                "allowed_input_types": ALLOWED_INPUT_TYPES,
-                "guidance": "Answer with concrete domain details relevant to this event.",
-                "branch_rules": [],
-            }
-            for index, prompt in enumerate(prompts, start=1)
-        ],
-        "research_context": f"Generated from topic context because structured retrieval was unavailable: {topic}",
     }
 
 
@@ -207,37 +259,59 @@ async def _collect_context(client: httpx.AsyncClient, topic: str, news_results: 
     return "\n\n".join(chunk for chunk in context_chunks if chunk.strip())[:12000]
 
 
-def _build_llm_messages(topic: str, context_text: str) -> list[dict[str, str]]:
-    schema = (
-        '{"schema_version":"1.0","questionnaire_id":"string","title":"Customized Event Interview",'
-        '"questions":[{"id":"q-001","position":1,"text":"Contextual question based on news","type":"OPEN_TEXT",'
-        '"required":true,"allowed_input_types":["text","audio","image","pdf","docx","pptx","xlsx","video","url"],'
-        '"guidance":null,"branch_rules":[]}]}'
-    )
-
-    system_prompt = (
-        "You are an expert research assistant. Return only valid JSON with no markdown, no prose, and no citations. "
-        "Your output must strictly match the required schema and include 7 to 10 contextual questions grounded in the provided context. "
-        "Set title exactly to 'Customized Event Interview'. Keep type as OPEN_TEXT for every question."
-    )
-    user_prompt = (
-        f"Topic: {topic}\n\n"
-        "Context to ground the questionnaire:\n"
-        f"{context_text}\n\n"
-        "Required schema:\n"
-        f"{schema}"
-    )
-    return [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-
-
-async def _generate_with_azure(client: httpx.AsyncClient, topic: str, context_text: str) -> dict | None:
+async def _generate_with_azure(client: httpx.AsyncClient, topic: str, scraped_text: str) -> dict | None:
     if not AZURE_OPENAI_API_KEY:
         raise ValueError("AZURE_OPENAI_API_KEY missing in .env.local")
 
     url = _build_azure_url()
+    system_instructions = """You are an expert event interviewer. 
+Your task is to generate a strict JSON questionnaire for an event.
+
+INSTRUCTIONS:
+1. You MUST output ONLY valid JSON matching the exact schema provided.
+2. Extract the event metadata from the [EVENT TOPIC] and place it in the `metadata` object. If a field is missing, use "Not specified".
+3. The questionnaire MUST start with these exact 3 standard, domain-agnostic baseline questions to capture participant context:
+   - Q1: "Could you please state your primary role, department, and your main reason for attending this event?"
+   - Q2: "What was the most valuable insight, concept, or connection you gained from this session?"
+   - Q3: "How well did the event content and speakers meet your initial expectations?"
+4. After the 3 standard questions, generate 3 to 5 highly specific, dynamic questions tailored to the event.
+5. Base the dynamic questions on the provided [NEWS CONTEXT]. 
+6. IF the [NEWS CONTEXT] is empty, irrelevant, or yields no results, fall back to generating dynamic questions based purely on the [EVENT TOPIC].
+
+REQUIRED JSON SCHEMA:
+{
+  "schema_version": "1.0",
+  "questionnaire_id": "string",
+  "title": "Customized Event Interview",
+  "metadata": {
+    "event_title": "string",
+    "event_description": "string",
+    "event_dates": "string",
+    "event_speakers": ["string"]
+  },
+  "questions": [
+    {
+      "id": "q-001",
+      "position": 1,
+      "text": "The question text",
+      "type": "OPEN_TEXT",
+      "required": true,
+      "allowed_input_types": ["text", "audio", "image", "pdf", "docx", "pptx", "xlsx", "video", "url"],
+      "guidance": null,
+      "branch_rules": []
+    }
+  ]
+}"""
+
+    user_content = f"[EVENT TOPIC]:\n{topic}\n\n[NEWS CONTEXT]:\n{scraped_text}"
+
     payload = {
-        "messages": _build_llm_messages(topic, context_text),
-        "max_completion_tokens": 1800,
+        "messages": [
+            {"role": "system", "content": system_instructions},
+            {"role": "user", "content": user_content}
+        ],
+        "max_completion_tokens": 2000,
+        "response_format": {"type": "json_object"}
     }
     headers = {"api-key": AZURE_OPENAI_API_KEY, "Content-Type": "application/json"}
 
@@ -271,7 +345,7 @@ async def _generate_with_azure(client: httpx.AsyncClient, topic: str, context_te
     return None
 
 
-async def _retrieve_news_results(client: httpx.AsyncClient, topic: str) -> tuple[list[dict[str, str]], bool]:
+async def _retrieve_news_results(client: httpx.AsyncClient, search_query: str) -> tuple[list[dict[str, str]], bool]:
     if not MRA_ENDPOINT or not MRA_API_KEY:
         raise ValueError("MRA credentials not found in .env.local")
 
@@ -286,7 +360,7 @@ async def _retrieve_news_results(client: httpx.AsyncClient, topic: str) -> tuple
     for path in candidate_paths:
         url = f"{MRA_ENDPOINT.rstrip('/')}{path}"
         try:
-            response = await client.post(url, json={"query": topic, "user_id": "phase1-local-backend"}, headers=headers)
+            response = await client.post(url, json={"query": search_query, "user_id": "phase1-local-backend"}, headers=headers)
         except Exception as exc:  # pragma: no cover - network path
             print(f"MRA network failure for {url}: {exc}")
             had_network_failure = True
@@ -307,13 +381,16 @@ async def _retrieve_news_results(client: httpx.AsyncClient, topic: str) -> tuple
     return [], had_network_failure
 
 
-async def generate_questionnaire_from_mra(topic: str) -> dict:
+async def generate_custom_questions(event_data: dict) -> dict:
+    title, description, speakers, start_date, _end_date, _dates, search_query = _event_fields(event_data)
+    topic = f"Event: {title}\nDates: {start_date}\nSpeakers: {speakers}\nDescription: {description}"
+
     async with httpx.AsyncClient(timeout=120.0, verify=False) as client:
         mra_network_failed = False
         azure_network_failed = False
 
         try:
-            news_results, mra_network_failed = await _retrieve_news_results(client, topic)
+            news_results, mra_network_failed = await _retrieve_news_results(client, search_query)
         except Exception as exc:
             print(f"MRA retrieval failed: {exc}")
             news_results = []
@@ -333,8 +410,20 @@ async def generate_questionnaire_from_mra(topic: str) -> dict:
 
         if mra_network_failed and azure_network_failed:
             print("Both MRA retrieval and Azure generation failed due to network errors. Using hard fallback.")
-            return _fallback_questionnaire(topic)
+            return _fallback_questionnaire(event_data)
 
         # Non-catastrophic fallback: keep questionnaire contextual even if one dependency fails.
-        return _context_only_questionnaire(topic)
+        return _context_only_questionnaire(event_data)
+
+
+async def generate_questionnaire_from_mra(topic: str) -> dict:
+    # Compatibility wrapper retained for existing tests/callers.
+    event_data = {
+        "title": topic,
+        "description": "",
+        "speakers": [],
+        "start_date": "",
+        "end_date": "",
+    }
+    return await generate_custom_questions(event_data)
 

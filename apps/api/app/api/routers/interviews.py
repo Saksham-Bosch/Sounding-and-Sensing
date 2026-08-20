@@ -16,7 +16,7 @@ UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent 
 
 
 @router.post("/start", response_model=InterviewSession, status_code=201)
-async def start_interview(event_id: str, questionnaire_id: str):
+async def start_interview(event_id: str, questionnaire_id: str, participant_role: str = "General"):
     """Initializes a new interview session for a given questionnaire."""
     # Verify questionnaire exists
     questionnaires = db.get_all_records("Questionnaires")
@@ -29,6 +29,7 @@ async def start_interview(event_id: str, questionnaire_id: str):
         "session_id": session_id,
         "event_id": event_id,
         "questionnaire_id": questionnaire_id,
+        "participant_role": participant_role,
         "status": "IN_PROGRESS",
         "current_question_position": 1,
     }
