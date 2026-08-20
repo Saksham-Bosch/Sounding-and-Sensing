@@ -2,50 +2,71 @@
 
 Sounding and Sensing is the permanent repository for the Event Information Gathering and Dissemination platform.
 
-Current status: architecture and proof-of-concept planning stage. The repository currently contains scaffold, policy, and contract-oriented placeholders only. It does not claim to implement the full application.
+Phase 1 is complete. The backend now implements the enterprise event capture, hybrid RAG questionnaire generation, multi-modal ingestion, STT transcription, URL moderation, executive reporting, and DOCX export flows required for the local proof of concept.
 
-Progress status:
+## Phase 1 Complete
 
-- Phase 0: Foundation and architecture baseline - In progress
-- Phase 0.5: Azure API Verification Spike - Completed
+### Core Features
 
-Planned major components:
+- Event creation captures rich metadata including speakers and event dates.
+- Questionnaire generation uses centralized event metadata plus live news grounding, with strict JSON output and deterministic fallback behavior when news is unavailable.
+- Multi-modal ingestion supports `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.csv`, images, URLs, audio, and video.
+- Audio and video processing uses `pydub` and Azure OpenAI Whisper with OAuth, 24 MB-safe chunking, and rate-limited transcription.
+- URL answers are protected with SSRF checks and Azure LLM content moderation before scraping and storage.
+- Uploaded documents and media are cleaned up automatically after extraction/transcription.
+- Executive reporting aggregates interview answers by event and generates audience-specific AI summaries with direct `.docx` export.
 
-- Lovable-generated React frontend for an initial frontend-only proof of concept
-- Python API for application orchestration and contract enforcement
-- Market Research Agent backend integration
-- Market Research Agent repository integration
-- PostgreSQL database on GCP as the target system of record
-- GCP-hosted asynchronous processing worker
-- Approved organizational Speech-to-Text integrations
-- Approved organizational OCR and document-processing integrations
-- Existing organizational portal and multiparty chat integration
+### Architecture Overview
 
-Temporary development constraints:
+- `apps/api` hosts the FastAPI backend and the Excel-backed repository adapters used by the local POC.
+- `apps/api/app/api/routers` contains the domain routers for events, questionnaires, interviews, and reports.
+- `apps/api/app/integrations` contains the hybrid RAG client, OCR client, STT client, moderation client, and parser utilities.
+- `apps/api/app/repositories/excel_adapter.py` provides the current `mock_database.xlsx` storage adapter.
+- `apps/api/app/main.py` wires the routers into the application and exposes the API under `/api/v1`.
 
-- GCP access is not yet available.
-- PostgreSQL is introduced later.
-- A local Excel workbook may temporarily act as development storage.
-- Excel storage must stay behind repository interfaces.
-- Actual Excel data files must never be committed.
-- Speech-to-Text and OCR remain simulated or interface-backed until approved services are available.
-- No third-party open-source Speech-to-Text or OCR models are added.
-- Deterministic file parsers are deferred until organizational approval.
-- Phase 0 is for architecture, contracts, configuration, and readiness only.
+### Repository Status
 
-Excel is a temporary storage adapter, not the production persistence layer.
-PostgreSQL on GCP is the target database.
-Speech-to-Text and OCR integrations require approved organizational services.
+- Phase 0: Foundation and architecture baseline - completed as groundwork.
+- Phase 1: Backend implementation and executive polish - completed.
 
-API integration verification notes:
+### Current Storage Model
 
-- OCR: Verified with multi-page PDF support (PyMuPDF) and strict prompt extraction.
-- Market Research Agent: Verified with strict JSON schema enforcement.
-- STT (Whisper): Entra ID authentication and MP3 video-to-audio extraction are confirmed; live transcription remains pending Azure network IP whitelist.
+- The application currently uses a mocked Excel repository (`mock_database.xlsx`) for local development.
+- Excel is an adapter for the POC only and must stay behind repository interfaces.
+- Production persistence is still intended to move to PostgreSQL in the future.
 
-Repository layout summary:
+### Setup Requirements
 
-- `apps/api` - application API scaffold
+- Install Python dependencies from `apps/api/requirements.txt`.
+- Install `FFmpeg` on the system PATH for audio/video processing.
+- Use the local `.env.local` file for Azure and agent credentials.
+- Do not commit secret-bearing `.env` files or generated Excel data.
+
+### Required Environment Variables
+
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_API_VERSION`
+- `AZURE_OPENAI_CHAT_MODEL`
+- `AZURE_OPENAI_WHISPER_ENDPOINT`
+- `AZURE_OPENAI_WHISPER_TENANT_ID`
+- `AZURE_OPENAI_WHISPER_CLIENT_ID`
+- `AZURE_OPENAI_WHISPER_SECRET`
+- `AZURE_OPENAI_WHISPER_API`
+- `EXTERNAL_NEWS_AGENT_ENDPOINT`
+- `EXTERNAL_NEWS_AGENT_API_KEY`
+- `EXTERNAL_NEWS_AGENT_PATH`
+- `EXTERNAL_NEWS_AGENT_AUTH_HEADER`
+
+### Working Notes
+
+- The API and live tests rely on approved Azure services and a network path that can reach them.
+- OCR, STT, moderation, and summaries are all routed through Azure-backed integrations.
+- The repository intentionally keeps reference material in `architecture-analysis-workspace/` read-only.
+
+### Repository Layout
+
+- `apps/api` - FastAPI backend, routers, schemas, integrations, and Excel repository adapter
 - `apps/worker` - asynchronous processing worker scaffold
 - `apps/web/lovable-exported-code` - Lovable export landing zone
 - `packages/contracts` - shared contracts and schemas
@@ -55,14 +76,14 @@ Repository layout summary:
 - `tests` - contract, integration, and end-to-end test structure
 - `data` - local-only storage guidance and templates
 
-Branching strategy:
+### Branching Strategy
 
 - `main` is the stable baseline branch.
 - Work should proceed in short-lived task branches such as `docs/`, `feature/`, `fix/`, `test/`, `refactor/`, `chore/`, or `security/`.
-- Phase tracking belongs in documentation, issues, labels, milestones, and release tags.
 
-Architecture overview:
+### Documentation
 
-- [Proposed architecture overview](docs/architecture/overview.md)
+- [API README](apps/api/README.md)
+- [Architecture overview](docs/architecture/overview.md)
 
 Reference material under `architecture-analysis-workspace/` is read-only and must not be modified or copied wholesale into this repository.
